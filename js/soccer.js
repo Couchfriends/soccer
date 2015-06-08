@@ -136,8 +136,8 @@ SOCCER.newGame = function () {
 SOCCER.reset = function () {
     //SOCCER.players = [];
     SOCCER.balls = [];
-    SOCCER.score.teamA = 0;
-    SOCCER.score.teamB = 0;
+    SOCCER.score['A'] = 0;
+    SOCCER.score['B'] = 0;
 
     if (SOCCER._engine.enabled != null) {
         Matter.Engine.clear(SOCCER._engine);
