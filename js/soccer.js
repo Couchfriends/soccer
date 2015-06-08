@@ -46,7 +46,8 @@ var SOCCER = {
     _vars: {
         minGoalY: 0,
         maxGoalY: 0,
-        maxForce: 4
+        maxForce: 4,
+        events: []
     }
 };
 
@@ -84,41 +85,7 @@ SOCCER.newGame = function () {
 
     SOCCER.addBall();
 
-    Matter.Events.on(SOCCER._engine, 'afterTick', function (timestamp) {
-
-        for (var i = 0; i < SOCCER.balls.length; i++) {
-            if (SOCCER.balls[i].passive == true) {
-                SOCCER.balls[i].sleepThreshold--;
-                if (SOCCER.balls[i].sleepThreshold % 10 == 1) {
-                    SOCCER.balls[i].render.fillStyle = '#cccccc';
-                }
-                else {
-                    SOCCER.balls[i].render.fillStyle = '#ffffff';
-                }
-                if (SOCCER.balls[i].speed < 1 && SOCCER.balls[i].sleepThreshold <= 0) {
-                    Matter.World.remove(SOCCER._engine.world, SOCCER.balls[i]);
-                    SOCCER.balls.splice(i, 1);
-                    SOCCER.addBall();
-                }
-                continue;
-            }
-            var inGoal = SOCCER.isBallInGoal(SOCCER.balls[i].position);
-            if (inGoal != false) {
-                Matter.Body.set(SOCCER.balls[i], 'passive', true);
-                SOCCER.balls[i].render.fillStyle = '#cccccc';
-                SOCCER.balls[i].render.sprite.texture = null;
-                SOCCER.addScore(inGoal);
-                break;
-            }
-        }
-
-        for (var playerId in SOCCER.players) {
-            if (SOCCER.players[playerId] != null) {
-                SOCCER.players[playerId].update(playerId);
-            }
-        }
-
-    });
+    SOCCER.addEvents();
 
     for (var playerId in SOCCER.players) {
         if (SOCCER.players[playerId] != null) {
@@ -127,6 +94,100 @@ SOCCER.newGame = function () {
     }
 
     Matter.Engine.run(SOCCER._engine);
+
+};
+
+/**
+ * Add global events
+ */
+SOCCER.addEvents = function () {
+
+    // Simple tick
+    SOCCER._vars.events.push(
+        Matter.Events.on(SOCCER._engine, 'afterTick', function (timestamp) {
+
+            for (var i = 0; i < SOCCER.balls.length; i++) {
+                if (SOCCER.balls[i].passive == true) {
+                    SOCCER.balls[i].sleepThreshold--;
+                    if (SOCCER.balls[i].sleepThreshold % 10 == 1) {
+                        SOCCER.balls[i].render.fillStyle = '#cccccc';
+                    }
+                    else {
+                        SOCCER.balls[i].render.fillStyle = '#ffffff';
+                    }
+                    if (SOCCER.balls[i].speed < 1 && SOCCER.balls[i].sleepThreshold <= 0) {
+                        Matter.World.remove(SOCCER._engine.world, SOCCER.balls[i]);
+                        SOCCER.balls.splice(i, 1);
+                        SOCCER.addBall();
+                    }
+                    continue;
+                }
+                var inGoal = SOCCER.isBallInGoal(SOCCER.balls[i].position);
+                if (inGoal != false) {
+                    Matter.Body.set(SOCCER.balls[i], 'passive', true);
+                    SOCCER.balls[i].render.fillStyle = '#cccccc';
+                    SOCCER.balls[i].render.sprite.texture = null;
+                    SOCCER.addScore(inGoal);
+                    break;
+                }
+            }
+
+            for (var playerId in SOCCER.players) {
+                if (SOCCER.players[playerId] != null) {
+                    SOCCER.players[playerId].update(playerId);
+                }
+            }
+
+        })
+    );
+
+    // Collision detection
+    SOCCER._vars.events.push(
+        // an example of using collisionStart event on an engine
+        Matter.Events.on(SOCCER._engine, 'collisionStart', function (event) {
+            var pairs = event.pairs;
+            // change object colours to show those starting a collision
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i];
+                if (pair.bodyA.soccerType == null || pair.bodyB.soccerType == null) {
+                    continue;
+                }
+                if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
+                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.push(pair.bodyB);
+                }
+                else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
+                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.push(pair.bodyA);
+                }
+            }
+        })
+    );
+
+    SOCCER._vars.events.push(
+        // an example of using collisionEnd event on an engine
+        Matter.Events.on(SOCCER._engine, 'collisionEnd', function (event) {
+            var pairs = event.pairs;
+
+            // change object colours to show those ending a collision
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i];
+                if (pair.bodyA.soccerType == null || pair.bodyB.soccerType == null) {
+                    continue;
+                }
+                if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
+                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.splice(
+                        SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.indexOf(pair.bodyB),
+                        1
+                    );
+                }
+                else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
+                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.splice(
+                        SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.indexOf(pair.bodyA),
+                        1
+                    );
+                }
+            }
+        })
+    );
 
 };
 
@@ -141,6 +202,11 @@ SOCCER.reset = function () {
 
     if (SOCCER._engine.enabled != null) {
         Matter.Engine.clear(SOCCER._engine);
+        if (SOCCER._engine.world.events) {
+            for (var i = 0; i < SOCCER._vars.events.length; i++) {
+                Events.off(SOCCER._engine.world, SOCCER._vars.events[i]);
+            }
+        }
     }
     document.getElementById('content').innerHTML = '';
 
@@ -150,6 +216,7 @@ SOCCER.reset = function () {
     if (document.getElementById('game-overlay') != null) {
         document.getElementById('game-overlay').parentElement.removeChild(document.getElementById('game-overlay'));
     }
+    SOCCER._vars.events = [];
 };
 
 SOCCER.addScore = function (team) {
@@ -160,7 +227,7 @@ SOCCER.addScore = function (team) {
         if (team == 'B') {
             _color = SOCCER.settings.colorTeamB.main;
         }
-        document.getElementById('content').innerHTML += '<div id="game-overlay" style="position: fixed;z-index: 20;font-size: 72px;text-align:center;width:100%;height:100%;line-height:' + (SOCCER.gameHeight/4) + 'px;color:#fff;background-color: ' + _color + ';">TEAM ' + team + ' WON. Game resets in 10 seconds...<br />(You might swap teams!)</div>';
+        document.getElementById('content').innerHTML += '<div id="game-overlay" style="position: fixed;z-index: 20;font-size: 72px;text-align:center;width:100%;height:100%;line-height:' + (SOCCER.gameHeight / 4) + 'px;color:#fff;background-color: ' + _color + ';">TEAM ' + team + ' WON. Game resets in 10 seconds...<br />(You might swap teams!)</div>';
         setTimeout(SOCCER.newGame, 10000);
     }
 };
@@ -199,8 +266,8 @@ SOCCER.addBall = function () {
         render: {
             sprite: {
                 texture: './img/ball.png',
-                xScale:1,
-                yScale:1
+                xScale: 1,
+                yScale: 1
             },
             fillStyle: _color,
             strokeStyle: '#000000',
@@ -215,6 +282,7 @@ SOCCER.addBall = function () {
     );
     ball.passive = false;
     ball.sleepThreshold = 120;
+    ball.soccerType = 'ball';
     SOCCER.balls.push(ball);
 
     Matter.World.add(SOCCER._engine.world, ball);
@@ -364,7 +432,8 @@ SOCCER.addPlayer = function (id) {
     var player = {
         id: id,
         speedX: 0,
-        speedY: 0
+        speedY: 0,
+        touchedBalls: []
     };
     var teamA = 0;
     var teamB = 0;
@@ -406,6 +475,11 @@ SOCCER.addPlayer = function (id) {
         _options
     );
 
+    /**
+     * Applying force if it hasn't reach it max yet
+     * @param playerId
+     * @returns {boolean}
+     */
     player.update = function (playerId) {
         var body = SOCCER.players[playerId].body;
 
@@ -428,14 +502,36 @@ SOCCER.addPlayer = function (id) {
                 y: SOCCER.players[playerId].speedY
             }
         );
-
     };
     player.body.passive = false;
+    player.body.soccerType = 'player';
+    player.body.soccerPlayerId = id;
 
     Matter.World.add(SOCCER._engine.world, player.body);
     SOCCER.players['player_' + id] = player;
     identifyPlayer(id, player.color);
     return player;
+};
+
+SOCCER.shoot = function (playerId) {
+    if (SOCCER.players['player_' + playerId].touchedBalls.length == 0) {
+        return;
+    }
+    for (var i = 0; i < SOCCER.players['player_' + playerId].touchedBalls.length; i++) {
+        var relativeX = SOCCER.players['player_' + playerId].touchedBalls[i].position.x - SOCCER.players['player_' + playerId].body.position.x;
+        var relativeY = SOCCER.players['player_' + playerId].touchedBalls[i].position.y - SOCCER.players['player_' + playerId].body.position.y;
+        Matter.Body.applyForce(
+            SOCCER.players['player_' + playerId].touchedBalls[i],
+            {
+                x: SOCCER.players['player_' + playerId].body.position.x,
+                y: SOCCER.players['player_' + playerId].body.position.y
+            },
+            {
+                x: (relativeX *.0015),
+                y: (relativeY *.0015)
+            }
+        );
+    }
 };
 
 /**
