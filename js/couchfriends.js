@@ -24,6 +24,21 @@ function init() {
     COUCHFRIENDS.connect();
 }
 
+function identifyPlayer(playerId, color) {
+    if (color == null || color == '') {
+        return;
+    }
+    var jsonData = {
+        topic: 'player',
+        action: 'identify',
+        data: {
+            id: playerId,
+            color: color
+        }
+    };
+    COUCHFRIENDS.send(jsonData);
+}
+
 COUCHFRIENDS.on('connect', function() {
     hostGame();
 });

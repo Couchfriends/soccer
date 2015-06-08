@@ -434,6 +434,7 @@ SOCCER.addPlayer = function (id) {
 
     Matter.World.add(SOCCER._engine.world, player.body);
     SOCCER.players['player_' + id] = player;
+    identifyPlayer(id, player.color);
     return player;
 };
 
