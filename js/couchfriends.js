@@ -72,8 +72,12 @@ COUCHFRIENDS.on('playerClick', function(data) {
 });
 
 COUCHFRIENDS.on('buttonClick', function(data) {
-    //console.log('Player clicked a button. Player id: ' + data.playerId + ' Button id: ' + data.id);
-    SOCCER.shoot(data.playerId);
+    if (data.id == "shootBall") {
+        SOCCER.shoot(data.playerId);
+    }
+    if (data.id == "kickPlayer") {
+        SOCCER.kick(data.playerId);
+    }
 });
 
 window.onload = init;

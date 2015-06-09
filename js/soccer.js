@@ -27,6 +27,7 @@ var SOCCER = {
      * team: the name of the team (A|B)
      */
     players: [],
+    playerBodies: [], // List of all player bodies
     /**
      * Array with all the soccer balls in the game
      */
@@ -134,19 +135,8 @@ SOCCER.addEvents = function () {
 
             for (var playerId in SOCCER.players) {
                 if (SOCCER.players[playerId] != null) {
-                    SOCCER.players[playerId].update(playerId);
-                }
-            }
 
-        })
-    );
-
-    // Collision detection
-    SOCCER._vars.events.push(
-        Matter.Events.on(SOCCER._engine, 'afterRender', function (event) {
-
-            for (var playerId in SOCCER.players) {
-                if (SOCCER.players[playerId] != null) {
+                    // Check hit for balls
                     var bodyPlayer = SOCCER.players[playerId].body;
                     var bounds = {
                         min: { x: bodyPlayer.position.x-36, y: bodyPlayer.position.y-36 },
@@ -164,6 +154,23 @@ SOCCER.addEvents = function () {
                             SOCCER.players[playerId].removeCollision(result[i]);
                         }
                     }
+                    // Check hit for other players
+                    var result = Matter.Query.region(SOCCER.playerBodies, bounds);
+                    if (result.length > 0) {
+                        for (var i = 0; i < result.length; i++) {
+                            if (playerId != 'player_' + result[i].soccerPlayerId) {
+                                SOCCER.players[playerId].collisionPlayer(result[i]);
+                            }
+                        }
+                    }
+                    var result = Matter.Query.region(SOCCER.playerBodies, bounds, true);
+                    if (result.length > 0) {
+                        for (var i = 0; i < result.length; i++) {
+                            SOCCER.players[playerId].removeCollisionPlayer(result[i]);
+                        }
+                    }
+
+                    SOCCER.players[playerId].update(playerId);
                 }
             }
 
@@ -415,7 +422,8 @@ SOCCER.addPlayer = function (id) {
         speedX: 0,
         speedY: 0,
         body: {},
-        touchedBalls: []
+        touchedBalls: [],
+        touchedPlayers: []
     };
     var teamA = 0;
     var teamB = 0;
@@ -535,12 +543,60 @@ SOCCER.addPlayer = function (id) {
             COUCHFRIENDS.send(jsonData);
         }
     };
+
+    player.collisionPlayer = function(otherPlayerBody) {
+        if (SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody) >= 0) {
+            return;
+        }
+        if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonAdd',
+                data: {
+                    id: 'kickPlayer',
+                    playerId: this.id,
+                    type: 'circle',
+                    label: 'Kick!',
+                    color: '#0000ff',
+                    size: {
+                        radius: 64
+                    },
+                    position: {
+                        left: '20%',
+                        top: '20%'
+                    }
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+        }
+        SOCCER.players['player_' + this.id].touchedPlayers.push(otherPlayerBody);
+    };
+
+    player.removeCollisionPlayer = function(otherPlayerBody) {
+        SOCCER.players['player_' + this.id].touchedPlayers.splice(
+            SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody),
+            1
+        );
+        if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonRemove',
+                data: {
+                    id: 'kickPlayer',
+                    playerId: this.id
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+        }
+    };
+
     player.body.passive = false;
     player.body.soccerType = 'player';
     player.body.soccerPlayerId = id;
 
     Matter.World.add(SOCCER._engine.world, player.body);
     SOCCER.players['player_' + id] = player;
+    SOCCER.playerBodies.push(player.body);
     identifyPlayer(id, player.color);
     return player;
 };
@@ -566,12 +622,37 @@ SOCCER.shoot = function (playerId) {
     }
 };
 
+SOCCER.kick = function (playerId) {
+    if (SOCCER.players['player_' + playerId].touchedPlayers.length == 0) {
+        return;
+    }
+    for (var i = 0; i < SOCCER.players['player_' + playerId].touchedPlayers.length; i++) {
+        var relativeX = SOCCER.players['player_' + playerId].touchedPlayers[i].position.x - SOCCER.players['player_' + playerId].body.position.x;
+        var relativeY = SOCCER.players['player_' + playerId].touchedPlayers[i].position.y - SOCCER.players['player_' + playerId].body.position.y;
+        Matter.Body.applyForce(
+            SOCCER.players['player_' + playerId].touchedPlayers[i],
+            {
+                x: SOCCER.players['player_' + playerId].body.position.x,
+                y: SOCCER.players['player_' + playerId].body.position.y
+            },
+            {
+                x: (relativeX *.0025),
+                y: (relativeY *.0025)
+            }
+        );
+    }
+};
+
 /**
  * Removes a player from the game with the given id
  * @param playerId
  */
 SOCCER.removePlayer = function (playerId) {
     Matter.World.remove(SOCCER._engine.world, SOCCER.players['player_' + playerId].body);
+    SOCCER.playerBodies.splice(
+        SOCCER.playerBodies.indexOf(SOCCER.players['player_' + playerId].body),
+        1
+    );
     delete(SOCCER.players['player_' + playerId]);
 };
 
