@@ -646,7 +646,7 @@ SOCCER.kick = function (playerId) {
             topic: 'interface',
             action: 'vibrate',
             data: {
-                id: playerId,
+                playerId: playerId,
                 duration: 200
             }
         };
