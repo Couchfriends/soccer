@@ -143,43 +143,30 @@ SOCCER.addEvents = function () {
 
     // Collision detection
     SOCCER._vars.events.push(
-        // an example of using collisionStart event on an engine
-        Matter.Events.on(SOCCER._engine, 'collisionStart', function (event) {
-            var pairs = event.pairs;
-            // change object colours to show those starting a collision
-            for (var i = 0; i < pairs.length; i++) {
-                var pair = pairs[i];
-                if (pair.bodyA.soccerType == null || pair.bodyB.soccerType == null) {
-                    continue;
-                }
-                if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].collision(pair.bodyB);
-                }
-                else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].collision(pair.bodyA);
+        Matter.Events.on(SOCCER._engine, 'afterRender', function (event) {
+
+            for (var playerId in SOCCER.players) {
+                if (SOCCER.players[playerId] != null) {
+                    var bodyPlayer = SOCCER.players[playerId].body;
+                    var bounds = {
+                        min: { x: bodyPlayer.position.x-36, y: bodyPlayer.position.y-36 },
+                        max: { x: bodyPlayer.position.x+36, y: bodyPlayer.position.y+36 }
+                    };
+                    var result = Matter.Query.region(SOCCER.balls, bounds);
+                    if (result.length > 0) {
+                        for (var i = 0; i < result.length; i++) {
+                            SOCCER.players[playerId].collision(result[i]);
+                        }
+                    }
+                    var result = Matter.Query.region(SOCCER.balls, bounds, true);
+                    if (result.length > 0) {
+                        for (var i = 0; i < result.length; i++) {
+                            SOCCER.players[playerId].removeCollision(result[i]);
+                        }
+                    }
                 }
             }
-        })
-    );
 
-    SOCCER._vars.events.push(
-        // an example of using collisionEnd event on an engine
-        Matter.Events.on(SOCCER._engine, 'collisionEnd', function (event) {
-            var pairs = event.pairs;
-
-            // change object colours to show those ending a collision
-            for (var i = 0; i < pairs.length; i++) {
-                var pair = pairs[i];
-                if (pair.bodyA.soccerType == null || pair.bodyB.soccerType == null) {
-                    continue;
-                }
-                if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].removeCollision(pair.bodyB);
-                }
-                else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].removeCollision(pair.bodyA);
-                }
-            }
         })
     );
 
@@ -427,6 +414,7 @@ SOCCER.addPlayer = function (id) {
         id: id,
         speedX: 0,
         speedY: 0,
+        body: {},
         touchedBalls: []
     };
     var teamA = 0;
@@ -503,26 +491,31 @@ SOCCER.addPlayer = function (id) {
      * @param ballBody
      */
     player.collision = function (ballBody) {
-        SOCCER.players['player_' + this.id].touchedBalls.push(ballBody);
-        var jsonData = {
-            topic: 'interface',
-            action: 'buttonAdd',
-            data: {
-                id: 'shootBall',
-                playerId: this.id,
-                type: 'circle',
-                label: 'Shoot!',
-                color: '#ff0000',
-                size: {
-                    radius: 64
-                },
-                position: {
-                    right: '10%',
-                    bottom: '10%'
+        if (SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody) >= 0) {
+            return;
+        }
+        if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonAdd',
+                data: {
+                    id: 'shootBall',
+                    playerId: this.id,
+                    type: 'circle',
+                    label: 'Shoot!',
+                    color: '#ff0000',
+                    size: {
+                        radius: 64
+                    },
+                    position: {
+                        left: '20%',
+                        bottom: '20%'
+                    }
                 }
-            }
-        };
-        COUCHFRIENDS.send(jsonData);
+            };
+            COUCHFRIENDS.send(jsonData);
+        }
+        SOCCER.players['player_' + this.id].touchedBalls.push(ballBody);
     };
 
     player.removeCollision = function (ballBody) {
@@ -530,15 +523,17 @@ SOCCER.addPlayer = function (id) {
             SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody),
             1
         );
-        var jsonData = {
-            topic: 'interface',
-            action: 'buttonRemove',
-            data: {
-                id: 'shootBall',
-                playerId: this.id
-            }
-        };
-        COUCHFRIENDS.send(jsonData);
+        if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonRemove',
+                data: {
+                    id: 'shootBall',
+                    playerId: this.id
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+        }
     };
     player.body.passive = false;
     player.body.soccerType = 'player';
