@@ -47,7 +47,7 @@ var SOCCER = {
     _vars: {
         minGoalY: 0,
         maxGoalY: 0,
-        maxForce: 4,
+        maxVelocity: 16,
         events: []
     }
 };
@@ -473,14 +473,13 @@ SOCCER.addPlayer = function (id) {
     player.update = function (playerId) {
         var body = SOCCER.players[playerId].body;
 
-        if (body.force.x < -(SOCCER._vars.maxForce) || body.force.x > SOCCER._vars.maxForce) {
+        if (body.velocity.x < -(SOCCER._vars.maxVelocity) || body.velocity.x > SOCCER._vars.maxVelocity) {
             return true;
         }
 
-        if (body.force.y < -(SOCCER._vars.maxForce) || body.force.y > SOCCER._vars.maxForce) {
+        if (body.velocity.y < -(SOCCER._vars.maxVelocity) || body.velocity.y > SOCCER._vars.maxVelocity) {
             return true;
         }
-
         Matter.Body.applyForce(
             body,
             {
@@ -674,8 +673,8 @@ SOCCER.removePlayer = function (playerId) {
  * @param movement object with x, y
  */
 SOCCER.movePlayer = function (playerId, movement) {
-    movement.x *= .01;
-    movement.y *= .01;
+    movement.x *= .02;
+    movement.y *= .02;
     SOCCER.players['player_' + playerId].speedX = movement.x;
     SOCCER.players['player_' + playerId].speedY = movement.y;
 };
