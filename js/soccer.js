@@ -636,10 +636,21 @@ SOCCER.kick = function (playerId) {
                 y: SOCCER.players['player_' + playerId].body.position.y
             },
             {
-                x: (relativeX *.0025),
-                y: (relativeY *.0025)
+                x: (relativeX *.003),
+                y: (relativeY *.003)
             }
         );
+        //
+        var playerId = SOCCER.players['player_' + playerId].touchedPlayers[i].soccerPlayerId;
+        var jsonData = {
+            topic: 'interface',
+            action: 'vibrate',
+            data: {
+                id: playerId,
+                duration: 200
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
     }
 };
 
@@ -663,8 +674,8 @@ SOCCER.removePlayer = function (playerId) {
  * @param movement object with x, y
  */
 SOCCER.movePlayer = function (playerId, movement) {
-    movement.x *= .009;
-    movement.y *= .009;
+    movement.x *= .01;
+    movement.y *= .01;
     SOCCER.players['player_' + playerId].speedX = movement.x;
     SOCCER.players['player_' + playerId].speedY = movement.y;
 };
