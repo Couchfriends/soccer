@@ -153,10 +153,10 @@ SOCCER.addEvents = function () {
                     continue;
                 }
                 if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.push(pair.bodyB);
+                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].collision(pair.bodyB);
                 }
                 else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.push(pair.bodyA);
+                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].collision(pair.bodyA);
                 }
             }
         })
@@ -174,16 +174,10 @@ SOCCER.addEvents = function () {
                     continue;
                 }
                 if (pair.bodyA.soccerType == 'player' && pair.bodyB.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.splice(
-                        SOCCER.players['player_' + pair.bodyA.soccerPlayerId].touchedBalls.indexOf(pair.bodyB),
-                        1
-                    );
+                    SOCCER.players['player_' + pair.bodyA.soccerPlayerId].removeCollision(pair.bodyB);
                 }
                 else if (pair.bodyB.soccerType == 'player' && pair.bodyA.soccerType == 'ball') {
-                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.splice(
-                        SOCCER.players['player_' + pair.bodyB.soccerPlayerId].touchedBalls.indexOf(pair.bodyA),
-                        1
-                    );
+                    SOCCER.players['player_' + pair.bodyB.soccerPlayerId].removeCollision(pair.bodyA);
                 }
             }
         })
@@ -502,6 +496,49 @@ SOCCER.addPlayer = function (id) {
                 y: SOCCER.players[playerId].speedY
             }
         );
+    };
+
+    /**
+     * Player collided with a ball
+     * @param ballBody
+     */
+    player.collision = function (ballBody) {
+        SOCCER.players['player_' + this.id].touchedBalls.push(ballBody);
+        var jsonData = {
+            topic: 'interface',
+            action: 'buttonAdd',
+            data: {
+                id: 'shootBall',
+                playerId: this.id,
+                type: 'circle',
+                label: 'Shoot!',
+                color: '#ff0000',
+                size: {
+                    radius: 64
+                },
+                position: {
+                    right: '10%',
+                    bottom: '10%'
+                }
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
+    };
+
+    player.removeCollision = function (ballBody) {
+        SOCCER.players['player_' + this.id].touchedBalls.splice(
+            SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody),
+            1
+        );
+        var jsonData = {
+            topic: 'interface',
+            action: 'buttonRemove',
+            data: {
+                id: 'shootBall',
+                playerId: this.id
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
     };
     player.body.passive = false;
     player.body.soccerType = 'player';

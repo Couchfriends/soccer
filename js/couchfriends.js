@@ -68,7 +68,12 @@ COUCHFRIENDS.on('playerOrientation', function(data) {
     SOCCER.movePlayer(data.id, data);
 });
 COUCHFRIENDS.on('playerClick', function(data) {
-    SOCCER.shoot(data.id);
+    //SOCCER.shoot(data.id);
+});
+
+COUCHFRIENDS.on('buttonClick', function(data) {
+    //console.log('Player clicked a button. Player id: ' + data.playerId + ' Button id: ' + data.id);
+    SOCCER.shoot(data.playerId);
 });
 
 window.onload = init;
