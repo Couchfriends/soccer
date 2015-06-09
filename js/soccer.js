@@ -647,7 +647,7 @@ SOCCER.kick = function (playerId) {
             action: 'vibrate',
             data: {
                 playerId: playerId,
-                duration: 200
+                duration: 500
             }
         };
         COUCHFRIENDS.send(jsonData);
