@@ -536,7 +536,12 @@ SOCCER.addPlayer = function (id) {
         if (SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody) >= 0) {
             return;
         }
-        if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+        this.addShootButton();
+        SOCCER.players['player_' + this.id].touchedBalls.push(ballBody);
+    };
+
+    player.addShootButton = function () {
+        if (SOCCER.players['player_' + this.id].touchedBalls.length == 0 && SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
             SOCCER.players['player_' + this.id].body.render.strokeStyle = '#ff0000';
             SOCCER.players['player_' + this.id].body.render.lineWidth = '3';
             var jsonData = {
@@ -549,36 +554,30 @@ SOCCER.addPlayer = function (id) {
                     label: 'Shoot!',
                     color: '#ff0000',
                     size: {
-                        radius: 80
+                        radius: 160
                     },
                     position: {
                         left: '50%',
-                        bottom: '20%'
-                    }
-                }
-            };
-            COUCHFRIENDS.send(jsonData);
-            var jsonData = {
-                topic: 'interface',
-                action: 'buttonAdd',
-                data: {
-                    id: 'shootBall2',
-                    playerId: this.id,
-                    type: 'circle',
-                    label: 'Shoot!',
-                    color: '#ff0000',
-                    size: {
-                        radius: 80
-                    },
-                    position: {
-                        left: '50%',
-                        top: '20%'
+                        top: '50%'
                     }
                 }
             };
             COUCHFRIENDS.send(jsonData);
         }
-        SOCCER.players['player_' + this.id].touchedBalls.push(ballBody);
+    };
+
+    player.removeShootButton = function () {
+        if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0 && SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonRemove',
+                data: {
+                    id: 'shootBall',
+                    playerId: this.id
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+        }
     };
 
     player.removeCollision = function (ballBody) {
@@ -590,57 +589,14 @@ SOCCER.addPlayer = function (id) {
             indexOf,
             1
         );
-        if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
-            SOCCER.players['player_' + this.id].body.render.strokeStyle = '#000000';
-            SOCCER.players['player_' + this.id].body.render.lineWidth = '1';
-            var jsonData = {
-                topic: 'interface',
-                action: 'buttonRemove',
-                data: {
-                    id: 'shootBall',
-                    playerId: this.id
-                }
-            };
-            COUCHFRIENDS.send(jsonData);
-            var jsonData = {
-                topic: 'interface',
-                action: 'buttonRemove',
-                data: {
-                    id: 'shootBall2',
-                    playerId: this.id
-                }
-            };
-            COUCHFRIENDS.send(jsonData);
-        }
+        this.removeShootButton();
     };
 
     player.collisionPlayer = function(otherPlayerBody) {
         if (SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody) >= 0) {
             return;
         }
-        if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
-            var jsonData = {
-                topic: 'interface',
-                action: 'buttonAdd',
-                data: {
-                    id: 'kickPlayer',
-                    playerId: this.id,
-                    type: 'square',
-                    label: 'Kick!',
-                    color: '#0000ff',
-                    size: {
-                        height: '50%',
-                        width: '100%'
-                        //radius: 64
-                    },
-                    position: {
-                        left: '0',
-                        top: '25%'
-                    }
-                }
-            };
-            COUCHFRIENDS.send(jsonData);
-        }
+        this.addShootButton();
         SOCCER.players['player_' + this.id].touchedPlayers.push(otherPlayerBody);
     };
 
@@ -653,17 +609,7 @@ SOCCER.addPlayer = function (id) {
             indexOf,
             1
         );
-        if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
-            var jsonData = {
-                topic: 'interface',
-                action: 'buttonRemove',
-                data: {
-                    id: 'kickPlayer',
-                    playerId: this.id
-                }
-            };
-            COUCHFRIENDS.send(jsonData);
-        }
+        this.removeShootButton();
     };
 
     player.reset = function () {
@@ -671,25 +617,7 @@ SOCCER.addPlayer = function (id) {
             topic: 'interface',
             action: 'buttonRemove',
             data: {
-                id: 'kickPlayer',
-                playerId: this.id
-            }
-        };
-        COUCHFRIENDS.send(jsonData);
-        var jsonData = {
-            topic: 'interface',
-            action: 'buttonRemove',
-            data: {
                 id: 'shootBall',
-                playerId: this.id
-            }
-        };
-        COUCHFRIENDS.send(jsonData);
-        var jsonData = {
-            topic: 'interface',
-            action: 'buttonRemove',
-            data: {
-                id: 'shootBall2',
                 playerId: this.id
             }
         };
@@ -709,7 +637,7 @@ SOCCER.addPlayer = function (id) {
 };
 
 SOCCER.shoot = function (playerId) {
-    if (SOCCER.players['player_' + playerId].touchedBalls.length == 0) {
+    if (SOCCER.players['player_' + playerId].touchedBalls.length == 0 && SOCCER.players['player_' + playerId].touchedPlayers.length == 0) {
         return;
     }
     var jsonData = {
@@ -736,21 +664,13 @@ SOCCER.shoot = function (playerId) {
             }
         );
     }
+    SOCCER.kick(playerId);
 };
 
 SOCCER.kick = function (playerId) {
     if (SOCCER.players['player_' + playerId].touchedPlayers.length == 0) {
         return;
     }
-    var jsonData = {
-        topic: 'interface',
-        action: 'vibrate',
-        data: {
-            playerId: playerId,
-            duration: 100
-        }
-    };
-    COUCHFRIENDS.send(jsonData);
 
     for (var i = 0; i < SOCCER.players['player_' + playerId].touchedPlayers.length; i++) {
         var relativeX = SOCCER.players['player_' + playerId].touchedPlayers[i].position.x - SOCCER.players['player_' + playerId].body.position.x;

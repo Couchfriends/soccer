@@ -68,13 +68,4 @@ COUCHFRIENDS.on('playerClick', function(data) {
     SOCCER.shoot(data.id);
 });
 
-COUCHFRIENDS.on('buttonClick', function(data) {
-    if (data.id == "shootBall" || data.id == "shootBall2") {
-        SOCCER.shoot(data.playerId);
-    }
-    if (data.id == "kickPlayer") {
-        SOCCER.kick(data.playerId);
-    }
-});
-
 window.onload = init;
