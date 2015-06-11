@@ -48,6 +48,7 @@ var SOCCER = {
         minGoalY: 0,
         maxGoalY: 0,
         maxVelocity: 16,
+        collisionSpace: 42,
         events: []
     }
 };
@@ -90,6 +91,8 @@ SOCCER.newGame = function () {
 
     for (var playerId in SOCCER.players) {
         if (SOCCER.players[playerId] != null) {
+            // Remove buttons
+            SOCCER.players[playerId].reset();
             SOCCER.addPlayer(playerId.replace(/[^0-9]+/, ''));
         }
     }
@@ -139,8 +142,8 @@ SOCCER.addEvents = function () {
                     // Check hit for balls
                     var bodyPlayer = SOCCER.players[playerId].body;
                     var bounds = {
-                        min: { x: bodyPlayer.position.x-36, y: bodyPlayer.position.y-36 },
-                        max: { x: bodyPlayer.position.x+36, y: bodyPlayer.position.y+36 }
+                        min: { x: bodyPlayer.position.x-SOCCER._vars.collisionSpace, y: bodyPlayer.position.y-SOCCER._vars.collisionSpace },
+                        max: { x: bodyPlayer.position.x+SOCCER._vars.collisionSpace, y: bodyPlayer.position.y+SOCCER._vars.collisionSpace }
                     };
                     var result = Matter.Query.region(SOCCER.balls, bounds);
                     if (result.length > 0) {
@@ -209,6 +212,10 @@ SOCCER.reset = function () {
 
 SOCCER.addScore = function (team) {
     SOCCER.score[team]++;
+    if (SOCCER.score[team] == 5) {
+        SOCCER.addBall();
+    }
+
     document.getElementById('game-score').innerHTML = 'Score: ' + SOCCER.score['A'] + '-' + SOCCER.score['B'];
     if (SOCCER.score[team] > 9) {
         var _color = SOCCER.settings.colorTeamA.main;
@@ -250,7 +257,8 @@ SOCCER.addBall = function () {
     var _color = SOCCER.settings.neutralColors[Math.floor(Math.random() * SOCCER.settings.neutralColors.length)];
     var _options = {
         isStatic: false,
-        restitution: .7,
+        restitution: 1,
+        mass: 1,
         render: {
             sprite: {
                 texture: './img/ball.png',
@@ -451,7 +459,9 @@ SOCCER.addPlayer = function (id) {
     }
     var _options = {
         isStatic: false,
-        density: 0.003,
+        density: .1,
+        restitution: .4,
+        mass: 2,
         render: {
             fillStyle: player.color,
             strokeStyle: '#000000',
@@ -480,6 +490,14 @@ SOCCER.addPlayer = function (id) {
         if (body.velocity.y < -(SOCCER._vars.maxVelocity) || body.velocity.y > SOCCER._vars.maxVelocity) {
             return true;
         }
+        Matter.Body.translate(
+            body,
+            {
+                x: (SOCCER.players[playerId].speedX * 20),
+                y: (SOCCER.players[playerId].speedY * 20)
+            }
+        );
+
         Matter.Body.applyForce(
             body,
             {
@@ -487,8 +505,8 @@ SOCCER.addPlayer = function (id) {
                 y: 0
             },
             {
-                x: SOCCER.players[playerId].speedX,
-                y: SOCCER.players[playerId].speedY
+                x: (SOCCER.players[playerId].speedX *.001),
+                y: (SOCCER.players[playerId].speedY *.001)
             }
         );
     };
@@ -502,6 +520,8 @@ SOCCER.addPlayer = function (id) {
             return;
         }
         if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            SOCCER.players['player_' + this.id].body.render.strokeStyle = '#ff0000';
+            SOCCER.players['player_' + this.id].body.render.lineWidth = '3';
             var jsonData = {
                 topic: 'interface',
                 action: 'buttonAdd',
@@ -512,11 +532,30 @@ SOCCER.addPlayer = function (id) {
                     label: 'Shoot!',
                     color: '#ff0000',
                     size: {
-                        radius: 64
+                        radius: 80
                     },
                     position: {
-                        left: '20%',
+                        left: '50%',
                         bottom: '20%'
+                    }
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonAdd',
+                data: {
+                    id: 'shootBall2',
+                    playerId: this.id,
+                    type: 'circle',
+                    label: 'Shoot!',
+                    color: '#ff0000',
+                    size: {
+                        radius: 80
+                    },
+                    position: {
+                        left: '50%',
+                        top: '20%'
                     }
                 }
             };
@@ -526,16 +565,31 @@ SOCCER.addPlayer = function (id) {
     };
 
     player.removeCollision = function (ballBody) {
+        var indexOf = SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody);
+        if (indexOf < 0) {
+            return;
+        }
         SOCCER.players['player_' + this.id].touchedBalls.splice(
-            SOCCER.players['player_' + this.id].touchedBalls.indexOf(ballBody),
+            indexOf,
             1
         );
         if (SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            SOCCER.players['player_' + this.id].body.render.strokeStyle = '#000000';
+            SOCCER.players['player_' + this.id].body.render.lineWidth = '1';
             var jsonData = {
                 topic: 'interface',
                 action: 'buttonRemove',
                 data: {
                     id: 'shootBall',
+                    playerId: this.id
+                }
+            };
+            COUCHFRIENDS.send(jsonData);
+            var jsonData = {
+                topic: 'interface',
+                action: 'buttonRemove',
+                data: {
+                    id: 'shootBall2',
                     playerId: this.id
                 }
             };
@@ -554,15 +608,17 @@ SOCCER.addPlayer = function (id) {
                 data: {
                     id: 'kickPlayer',
                     playerId: this.id,
-                    type: 'circle',
+                    type: 'square',
                     label: 'Kick!',
                     color: '#0000ff',
                     size: {
-                        radius: 64
+                        height: '50%',
+                        width: '100%'
+                        //radius: 64
                     },
                     position: {
-                        left: '20%',
-                        top: '20%'
+                        left: '0',
+                        top: '25%'
                     }
                 }
             };
@@ -572,8 +628,12 @@ SOCCER.addPlayer = function (id) {
     };
 
     player.removeCollisionPlayer = function(otherPlayerBody) {
+        var indexOf = SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody);
+        if (indexOf < 0) {
+            return;
+        }
         SOCCER.players['player_' + this.id].touchedPlayers.splice(
-            SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody),
+            indexOf,
             1
         );
         if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
@@ -589,6 +649,36 @@ SOCCER.addPlayer = function (id) {
         }
     };
 
+    player.reset = function () {
+        var jsonData = {
+            topic: 'interface',
+            action: 'buttonRemove',
+            data: {
+                id: 'kickPlayer',
+                playerId: this.id
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
+        var jsonData = {
+            topic: 'interface',
+            action: 'buttonRemove',
+            data: {
+                id: 'shootBall',
+                playerId: this.id
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
+        var jsonData = {
+            topic: 'interface',
+            action: 'buttonRemove',
+            data: {
+                id: 'shootBall2',
+                playerId: this.id
+            }
+        };
+        COUCHFRIENDS.send(jsonData);
+    };
+
     player.body.passive = false;
     player.body.soccerType = 'player';
     player.body.soccerPlayerId = id;
@@ -597,6 +687,7 @@ SOCCER.addPlayer = function (id) {
     SOCCER.players['player_' + id] = player;
     SOCCER.playerBodies.push(player.body);
     identifyPlayer(id, player.color);
+
     return player;
 };
 
@@ -604,6 +695,15 @@ SOCCER.shoot = function (playerId) {
     if (SOCCER.players['player_' + playerId].touchedBalls.length == 0) {
         return;
     }
+    var jsonData = {
+        topic: 'interface',
+        action: 'vibrate',
+        data: {
+            playerId: playerId,
+            duration: 100
+        }
+    };
+    COUCHFRIENDS.send(jsonData);
     for (var i = 0; i < SOCCER.players['player_' + playerId].touchedBalls.length; i++) {
         var relativeX = SOCCER.players['player_' + playerId].touchedBalls[i].position.x - SOCCER.players['player_' + playerId].body.position.x;
         var relativeY = SOCCER.players['player_' + playerId].touchedBalls[i].position.y - SOCCER.players['player_' + playerId].body.position.y;
@@ -625,6 +725,16 @@ SOCCER.kick = function (playerId) {
     if (SOCCER.players['player_' + playerId].touchedPlayers.length == 0) {
         return;
     }
+    var jsonData = {
+        topic: 'interface',
+        action: 'vibrate',
+        data: {
+            playerId: playerId,
+            duration: 100
+        }
+    };
+    COUCHFRIENDS.send(jsonData);
+
     for (var i = 0; i < SOCCER.players['player_' + playerId].touchedPlayers.length; i++) {
         var relativeX = SOCCER.players['player_' + playerId].touchedPlayers[i].position.x - SOCCER.players['player_' + playerId].body.position.x;
         var relativeY = SOCCER.players['player_' + playerId].touchedPlayers[i].position.y - SOCCER.players['player_' + playerId].body.position.y;
@@ -635,8 +745,8 @@ SOCCER.kick = function (playerId) {
                 y: SOCCER.players['player_' + playerId].body.position.y
             },
             {
-                x: (relativeX *.003),
-                y: (relativeY *.003)
+                x: (relativeX *.005),
+                y: (relativeY *.005)
             }
         );
         //
@@ -673,8 +783,8 @@ SOCCER.removePlayer = function (playerId) {
  * @param movement object with x, y
  */
 SOCCER.movePlayer = function (playerId, movement) {
-    movement.x *= .02;
-    movement.y *= .02;
+    //movement.x *= 20;//.018;
+    //movement.y *= 20;//.018;
     SOCCER.players['player_' + playerId].speedX = movement.x;
     SOCCER.players['player_' + playerId].speedY = movement.y;
 };

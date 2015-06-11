@@ -20,7 +20,6 @@ function hostGame() {
 }
 
 function init() {
-    document.body.innerHTML += '<div id="game-status" style="position: absolute;z-index: 6;bottom: 10px;left: 10px;background-color: rgba(255,255,255,.7);color: #000;padding: 10px;border: 2px solid #0f7500;">Game loading...</div>';
     COUCHFRIENDS.connect();
 }
 
@@ -44,7 +43,6 @@ COUCHFRIENDS.on('connect', function() {
 });
 
 COUCHFRIENDS.on('disconnect', function() {
-    document.getElementById('game-status').innerHTML = 'Game disconnected. <a href="#top" onclick="COUCHFRIENDS.connect();">Reconnect</a>.';
 });
 
 /**
@@ -54,7 +52,6 @@ COUCHFRIENDS.on('disconnect', function() {
  * @param {string} data.code The game code players need to fill to join this game
  */
 COUCHFRIENDS.on('gameStart', function(data) {
-    document.getElementById('game-status').innerHTML = 'Game started with code: <strong>' + data.code + '</strong>. Join with your phone at <strong>www.couchfriends.com</strong>!';
     SOCCER.newGame();
 });
 
@@ -68,11 +65,11 @@ COUCHFRIENDS.on('playerOrientation', function(data) {
     SOCCER.movePlayer(data.id, data);
 });
 COUCHFRIENDS.on('playerClick', function(data) {
-    //SOCCER.shoot(data.id);
+    SOCCER.shoot(data.id);
 });
 
 COUCHFRIENDS.on('buttonClick', function(data) {
-    if (data.id == "shootBall") {
+    if (data.id == "shootBall" || data.id == "shootBall2") {
         SOCCER.shoot(data.playerId);
     }
     if (data.id == "kickPlayer") {
