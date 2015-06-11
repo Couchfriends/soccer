@@ -9,8 +9,8 @@ var SOCCER = {
     settings: {
         neutralColors: ['#540DFF', '#100CE8', '#003EFF', '#0C7BE8', '#0DC7FF', '#FFF10D', '#E8C50C', '#FFBD00', '#E8990C', '#FF8A0D'],
         colorTeamA: {
-            main: '#00ff00', // green
-            secondary: ['#0DFF96', '#0CE84A', '#00FF00', '#59E80C', '#B6FF0D'],
+            main: '#0000ff', // green
+            secondary: ['#0000ff', '#667fff', '#001684', '#00e4ff', '#008c9d'],
             textures: ['img/teama/1.png','img/teama/2.png','img/teama/3.png','img/teama/4.png','img/teama/5.png']
         },
         colorTeamB: {
