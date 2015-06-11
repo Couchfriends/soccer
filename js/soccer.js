@@ -10,11 +10,13 @@ var SOCCER = {
         neutralColors: ['#540DFF', '#100CE8', '#003EFF', '#0C7BE8', '#0DC7FF', '#FFF10D', '#E8C50C', '#FFBD00', '#E8990C', '#FF8A0D'],
         colorTeamA: {
             main: '#00ff00', // green
-            secondary: ['#0DFF96', '#0CE84A', '#00FF00', '#59E80C', '#B6FF0D']
+            secondary: ['#0DFF96', '#0CE84A', '#00FF00', '#59E80C', '#B6FF0D'],
+            textures: ['img/teama/1.png','img/teama/2.png','img/teama/3.png','img/teama/4.png','img/teama/5.png']
         },
         colorTeamB: {
             main: '#ff0000', // red
-            secondary: ['#FF530D', '#E82C0C', '#FF0000', '#E80C7A', '#FF0DFF']
+            secondary: ['#FF530D', '#E82C0C', '#FF0000', '#E80C7A', '#FF0DFF'],
+            textures: ['img/teamb/1.png','img/teamb/2.png','img/teamb/3.png','img/teamb/4.png','img/teamb/5.png']
         },
         goal: {
             offset: 128,
@@ -70,7 +72,7 @@ SOCCER.newGame = function () {
             options: {
                 width: SOCCER.gameWidth,
                 height: SOCCER.gameHeight,
-                background: '#eee',
+                background: '../img/background.png',
                 hasBounds: true
             }
         }
@@ -444,18 +446,30 @@ SOCCER.addPlayer = function (id) {
         }
     }
 
-    var _size = 22;
+    var _size = 32;
     var _top = (SOCCER.gameHeight * .5);
     var _left = SOCCER.settings.goal.offset - (_size * 2);
     if (teamA > teamB) {
         player.team = "B";
         player.color = SOCCER.settings.colorTeamB.secondary[Math.floor(Math.random() * SOCCER.settings.colorTeamB.secondary.length)];
+        var textureIndex = teamB;
+        while (textureIndex >= SOCCER.settings.colorTeamB.textures.length) {
+            textureIndex -= SOCCER.settings.colorTeamB.textures.length;
+        }
+        var texture = SOCCER.settings.colorTeamB.textures[textureIndex];
+        player.texture = texture;
         _left = SOCCER.gameWidth - SOCCER.settings.goal.offset + (_size * 2);
 
     }
     else {
         player.team = "A";
         player.color = SOCCER.settings.colorTeamA.secondary[Math.floor(Math.random() * SOCCER.settings.colorTeamA.secondary.length)];
+        var textureIndex = teamA;
+        while (textureIndex >= SOCCER.settings.colorTeamA.textures.length) {
+            textureIndex -= SOCCER.settings.colorTeamA.textures.length;
+        }
+        var texture = SOCCER.settings.colorTeamA.textures[textureIndex];
+        player.texture = texture;
     }
     var _options = {
         isStatic: false,
@@ -465,7 +479,10 @@ SOCCER.addPlayer = function (id) {
         render: {
             fillStyle: player.color,
             strokeStyle: '#000000',
-            lineWidth: 1
+            lineWidth: 1,
+            sprite: {
+                texture: player.texture
+            }
         }
     };
     player.body = Matter.Bodies.circle(
