@@ -11,12 +11,12 @@ var SOCCER = {
         colorTeamA: {
             main: '#0000ff', // green
             secondary: ['#0000ff', '#667fff', '#001684', '#00e4ff', '#008c9d'],
-            textures: ['img/teama/1.png','img/teama/2.png','img/teama/3.png','img/teama/4.png','img/teama/5.png']
+            textures: ['img/teama/1.png', 'img/teama/2.png', 'img/teama/3.png', 'img/teama/4.png', 'img/teama/5.png']
         },
         colorTeamB: {
             main: '#ff0000', // red
             secondary: ['#FF530D', '#E82C0C', '#FF0000', '#E80C7A', '#FF0DFF'],
-            textures: ['img/teamb/1.png','img/teamb/2.png','img/teamb/3.png','img/teamb/4.png','img/teamb/5.png']
+            textures: ['img/teamb/1.png', 'img/teamb/2.png', 'img/teamb/3.png', 'img/teamb/4.png', 'img/teamb/5.png']
         },
         goal: {
             offset: 128,
@@ -38,6 +38,11 @@ var SOCCER = {
         A: 0,
         B: 0
     },
+    /**
+     * Additional objects that can be rendered in the canvas context.
+     * Each object should have at least an update() function
+     */
+    objects: [],
     /**
      * Matter engine
      */
@@ -72,7 +77,7 @@ SOCCER.newGame = function () {
             options: {
                 width: SOCCER.gameWidth,
                 height: SOCCER.gameHeight,
-                background: '../img/background.png',
+                background: 'transparent',
                 hasBounds: true
             }
         }
@@ -121,10 +126,17 @@ SOCCER.addEvents = function () {
                     else {
                         SOCCER.balls[i].render.fillStyle = '#ffffff';
                     }
-                    if (SOCCER.balls[i].speed < 1 && SOCCER.balls[i].sleepThreshold <= 0) {
-                        Matter.World.remove(SOCCER._engine.world, SOCCER.balls[i]);
-                        SOCCER.balls.splice(i, 1);
-                        SOCCER.addBall();
+                    if (SOCCER.balls[i].sleepThreshold <= 0) {
+                        SOCCER.balls[i].passive = false;
+                        SOCCER.balls[i].sleepThreshold = 120;
+                        SOCCER.balls[i].render.sprite.texture = './img/ball.png';Matter.Body.setVelocity(SOCCER.balls[i], {
+                            y: 0,
+                            x: 0
+                        });
+                        Matter.Body.setPosition(SOCCER.balls[i], {
+                            y: (SOCCER.gameHeight * .5),
+                            x: (SOCCER.gameWidth * .5)
+                        });
                     }
                     continue;
                 }
@@ -144,8 +156,14 @@ SOCCER.addEvents = function () {
                     // Check hit for balls
                     var bodyPlayer = SOCCER.players[playerId].body;
                     var bounds = {
-                        min: { x: bodyPlayer.position.x-SOCCER._vars.collisionSpace, y: bodyPlayer.position.y-SOCCER._vars.collisionSpace },
-                        max: { x: bodyPlayer.position.x+SOCCER._vars.collisionSpace, y: bodyPlayer.position.y+SOCCER._vars.collisionSpace }
+                        min: {
+                            x: bodyPlayer.position.x - SOCCER._vars.collisionSpace,
+                            y: bodyPlayer.position.y - SOCCER._vars.collisionSpace
+                        },
+                        max: {
+                            x: bodyPlayer.position.x + SOCCER._vars.collisionSpace,
+                            y: bodyPlayer.position.y + SOCCER._vars.collisionSpace
+                        }
                     };
                     var result = Matter.Query.region(SOCCER.balls, bounds);
                     if (result.length > 0) {
@@ -177,6 +195,10 @@ SOCCER.addEvents = function () {
 
                     SOCCER.players[playerId].update(playerId);
                 }
+            }
+
+            for (var i = 0; i < SOCCER.objects.length; i++) {
+                SOCCER.objects[i].update();
             }
 
         })
@@ -424,6 +446,38 @@ SOCCER.addGoals = function () {
 };
 
 /**
+ * Creates an shoot indicator for a player that is close to another player or ball
+ */
+SOCCER.addShootIndicator = function (playerBody) {
+
+    var object = {
+        playerBody: playerBody,
+        update: function () {
+        }
+    };
+    object.update = function () {
+        SOCCER._engine.render.context.beginPath();
+        SOCCER._engine.render.context.arc(playerBody.position.x, playerBody.position.y, 38, 0, 2 * Math.PI);
+        SOCCER._engine.render.context.strokeStyle = 'rgba(255,0,0, .7)';
+        SOCCER._engine.render.context.lineWidth = 5;
+        SOCCER._engine.render.context.stroke();
+        SOCCER._engine.render.context.lineWidth = 1;
+    };
+
+    this.objects.push(object);
+    return object;
+
+};
+SOCCER.removeShootIndicator = function (shootingObject) {
+
+    var indexOf = this.objects.indexOf(shootingObject);
+    if (indexOf < 0) {
+        return;
+    }
+    this.objects.splice(indexOf, 1);
+};
+
+/**
  * Adds a new player to the game
  */
 SOCCER.addPlayer = function (id) {
@@ -433,7 +487,8 @@ SOCCER.addPlayer = function (id) {
         speedY: 0,
         body: {},
         touchedBalls: [],
-        touchedPlayers: []
+        touchedPlayers: [],
+        indicatorObject: {}
     };
     var teamA = 0;
     var teamB = 0;
@@ -522,8 +577,8 @@ SOCCER.addPlayer = function (id) {
                 y: 0
             },
             {
-                x: (SOCCER.players[playerId].speedX *.001),
-                y: (SOCCER.players[playerId].speedY *.001)
+                x: (SOCCER.players[playerId].speedX * .001),
+                y: (SOCCER.players[playerId].speedY * .001)
             }
         );
     };
@@ -542,8 +597,8 @@ SOCCER.addPlayer = function (id) {
 
     player.addShootButton = function () {
         if (SOCCER.players['player_' + this.id].touchedBalls.length == 0 && SOCCER.players['player_' + this.id].touchedPlayers.length == 0) {
-            SOCCER.players['player_' + this.id].body.render.strokeStyle = '#ff0000';
-            SOCCER.players['player_' + this.id].body.render.lineWidth = '3';
+            var object = SOCCER.addShootIndicator(SOCCER.players['player_' + this.id].body);
+            this.indicatorObject = object;
             var jsonData = {
                 topic: 'interface',
                 action: 'buttonAdd',
@@ -568,6 +623,7 @@ SOCCER.addPlayer = function (id) {
 
     player.removeShootButton = function () {
         if (SOCCER.players['player_' + this.id].touchedPlayers.length == 0 && SOCCER.players['player_' + this.id].touchedBalls.length == 0) {
+            SOCCER.removeShootIndicator(this.indicatorObject);
             var jsonData = {
                 topic: 'interface',
                 action: 'buttonRemove',
@@ -592,7 +648,7 @@ SOCCER.addPlayer = function (id) {
         this.removeShootButton();
     };
 
-    player.collisionPlayer = function(otherPlayerBody) {
+    player.collisionPlayer = function (otherPlayerBody) {
         if (SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody) >= 0) {
             return;
         }
@@ -600,7 +656,7 @@ SOCCER.addPlayer = function (id) {
         SOCCER.players['player_' + this.id].touchedPlayers.push(otherPlayerBody);
     };
 
-    player.removeCollisionPlayer = function(otherPlayerBody) {
+    player.removeCollisionPlayer = function (otherPlayerBody) {
         var indexOf = SOCCER.players['player_' + this.id].touchedPlayers.indexOf(otherPlayerBody);
         if (indexOf < 0) {
             return;
@@ -659,8 +715,8 @@ SOCCER.shoot = function (playerId) {
                 y: SOCCER.players['player_' + playerId].body.position.y
             },
             {
-                x: (relativeX *.0015),
-                y: (relativeY *.0015)
+                x: (relativeX * .0015),
+                y: (relativeY * .0015)
             }
         );
     }
@@ -682,8 +738,8 @@ SOCCER.kick = function (playerId) {
                 y: SOCCER.players['player_' + playerId].body.position.y
             },
             {
-                x: (relativeX *.005),
-                y: (relativeY *.005)
+                x: (relativeX * .005),
+                y: (relativeY * .005)
             }
         );
         //
@@ -710,6 +766,7 @@ SOCCER.removePlayer = function (playerId) {
         SOCCER.playerBodies.indexOf(SOCCER.players['player_' + playerId].body),
         1
     );
+    SOCCER.removeShootIndicator(SOCCER.players['player_' + playerId].indicatorObject);
     delete(SOCCER.players['player_' + playerId]);
 };
 
