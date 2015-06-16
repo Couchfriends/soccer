@@ -145,7 +145,7 @@ SOCCER.addEvents = function () {
                     Matter.Body.set(SOCCER.balls[i], 'passive', true);
                     SOCCER.balls[i].render.fillStyle = '#cccccc';
                     SOCCER.balls[i].render.sprite.texture = null;
-                    SOCCER.addScore(inGoal);
+                    SOCCER.addScore(inGoal, SOCCER.balls[i].lastHitByPlayer);
                     break;
                 }
             }
@@ -169,6 +169,7 @@ SOCCER.addEvents = function () {
                     if (result.length > 0) {
                         for (var i = 0; i < result.length; i++) {
                             SOCCER.players[playerId].collision(result[i]);
+                            result[i].lastHitByPlayer = SOCCER.players[playerId];
                         }
                     }
                     var result = Matter.Query.region(SOCCER.balls, bounds, true);
@@ -234,7 +235,18 @@ SOCCER.reset = function () {
     SOCCER._vars.events = [];
 };
 
-SOCCER.addScore = function (team) {
+SOCCER.addScore = function (team, playerLastHit) {
+
+    var jsonData = {
+        topic: 'game',
+        action: 'achievementUnlock',
+        data: {
+            playerId: playerLastHit.id,
+            key: 'goal'
+        }
+    };
+    COUCHFRIENDS.send(jsonData);
+
     SOCCER.score[team]++;
     if (SOCCER.score[team] == 5) {
         SOCCER.addBall();
@@ -303,6 +315,7 @@ SOCCER.addBall = function () {
     ball.passive = false;
     ball.sleepThreshold = 120;
     ball.soccerType = 'ball';
+    ball.lastHitByPlayer = {};
     SOCCER.balls.push(ball);
 
     Matter.World.add(SOCCER._engine.world, ball);

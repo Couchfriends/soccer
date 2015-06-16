@@ -3,8 +3,8 @@
  *
  * Copyright (c) 2015 Couchfriends
  */
-COUCHFRIENDS.settings.apiKey = 'soccer-abc';
-COUCHFRIENDS.settings.host = '93.157.6.81'; // 'ws.couchfriends.com';
+COUCHFRIENDS.settings.apiKey = 'soccer-1234';
+COUCHFRIENDS.settings.host = 'ws.couchfriends.com';
 COUCHFRIENDS.settings.port = '1234';
 
 /**
@@ -14,7 +14,9 @@ function hostGame() {
     var jsonData = {
         topic: 'game',
         action: 'host',
-        data: { }
+        data: {
+            sessionKey: 'soccer-1234'
+        }
     };
     COUCHFRIENDS.send(jsonData);
 }
