@@ -129,7 +129,8 @@ SOCCER.addEvents = function () {
                     if (SOCCER.balls[i].sleepThreshold <= 0) {
                         SOCCER.balls[i].passive = false;
                         SOCCER.balls[i].sleepThreshold = 120;
-                        SOCCER.balls[i].render.sprite.texture = './img/ball.png';Matter.Body.setVelocity(SOCCER.balls[i], {
+                        SOCCER.balls[i].render.sprite.texture = './img/ball.png';
+                        Matter.Body.setVelocity(SOCCER.balls[i], {
                             y: 0,
                             x: 0
                         });
@@ -148,13 +149,35 @@ SOCCER.addEvents = function () {
                     SOCCER.addScore(inGoal, SOCCER.balls[i].lastHitByPlayer);
                     break;
                 }
+                if (SOCCER.balls[i].position.x < 0 || SOCCER.balls[i].position.x > SOCCER.gameWidth || SOCCER.balls[i].position.y < 0 || SOCCER.balls[i].position.y > SOCCER.gameHeight) {
+                    Matter.Body.setVelocity(SOCCER.balls[i], {
+                        y: 0,
+                        x: 0
+                    });
+                    Matter.Body.setPosition(SOCCER.balls[i], {
+                        y: (SOCCER.gameHeight * .5),
+                        x: (SOCCER.gameWidth * .5)
+                    });
+                }
             }
 
             for (var playerId in SOCCER.players) {
                 if (SOCCER.players[playerId] != null) {
 
-                    // Check hit for balls
                     var bodyPlayer = SOCCER.players[playerId].body;
+                    // Outside the world?
+                    if (bodyPlayer.position.x < 0 || bodyPlayer.position.x > SOCCER.gameWidth || bodyPlayer.position.y < 0 || bodyPlayer.position.y > SOCCER.gameHeight) {
+                        Matter.Body.setVelocity(bodyPlayer, {
+                            y: 0,
+                            x: 0
+                        });
+                        Matter.Body.setPosition(bodyPlayer, {
+                            y: (SOCCER.gameHeight * .5),
+                            x: (SOCCER.gameWidth * .5)
+                        });
+                    }
+
+                    // Check hit for balls
                     var bounds = {
                         min: {
                             x: bodyPlayer.position.x - SOCCER._vars.collisionSpace,
@@ -728,8 +751,8 @@ SOCCER.shoot = function (playerId) {
                 y: SOCCER.players['player_' + playerId].body.position.y
             },
             {
-                x: (relativeX * .0015),
-                y: (relativeY * .0015)
+                x: (relativeX * .0012),
+                y: (relativeY * .0012)
             }
         );
     }
