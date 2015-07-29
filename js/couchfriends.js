@@ -5,7 +5,7 @@
  */
 COUCHFRIENDS.settings.apiKey = 'soccer-1234';
 COUCHFRIENDS.settings.host = 'ws.couchfriends.com';
-COUCHFRIENDS.settings.port = '1234';
+COUCHFRIENDS.settings.port = '80';
 
 /**
  * Host a new game
