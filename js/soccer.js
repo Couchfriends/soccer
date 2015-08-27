@@ -138,6 +138,8 @@ SOCCER.addEvents = function () {
                             y: (SOCCER.gameHeight * .5),
                             x: (SOCCER.gameWidth * .5)
                         });
+                        // Reset players behind goal to start over
+                        SOCCER.resetPlayers();
                     }
                     continue;
                 }
@@ -258,6 +260,36 @@ SOCCER.reset = function () {
     SOCCER._vars.events = [];
 };
 
+/**
+ * Set players back to behind the goals after score
+ */
+SOCCER.resetPlayers = function() {
+
+    for (var playerId in SOCCER.players) {
+        if (SOCCER.players[playerId] != null) {
+
+            var player = SOCCER.players[playerId];
+            var bodyPlayer = player.body;
+
+            var _size = 32;
+            var _top = (SOCCER.gameHeight * .5);
+            var _left = SOCCER.settings.goal.offset - (_size * 2);
+            if (player.team == 'B') {
+                _left = SOCCER.gameWidth - SOCCER.settings.goal.offset + (_size * 2);
+            }
+            Matter.Body.setVelocity(bodyPlayer, {
+                y: 0,
+                x: 0
+            });
+            Matter.Body.setPosition(bodyPlayer, {
+                y: _top,
+                x: _left
+            });
+        }
+    }
+
+};
+
 SOCCER.addScore = function (team, playerLastHit) {
 
     var jsonData = {
@@ -271,9 +303,6 @@ SOCCER.addScore = function (team, playerLastHit) {
     COUCHFRIENDS.send(jsonData);
 
     SOCCER.score[team]++;
-    if (SOCCER.score[team] == 5) {
-        SOCCER.addBall();
-    }
 
     document.getElementById('game-score').innerHTML = 'Score: ' + SOCCER.score['A'] + '-' + SOCCER.score['B'];
     if (SOCCER.score[team] > 9) {
