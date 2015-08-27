@@ -167,6 +167,12 @@ SOCCER.addEvents = function () {
                 if (SOCCER.players[playerId] != null) {
 
                     var bodyPlayer = SOCCER.players[playerId].body;
+
+                    if (bodyPlayer.scoreThreshold > 0) {
+                        bodyPlayer.scoreThreshold--;
+                        bodyPlayer.render.visible = bodyPlayer.scoreThreshold % 2 != 1;
+                    }
+
                     // Outside the world?
                     if (bodyPlayer.position.x < 0 || bodyPlayer.position.x > SOCCER.gameWidth || bodyPlayer.position.y < 0 || bodyPlayer.position.y > SOCCER.gameHeight) {
                         Matter.Body.setVelocity(bodyPlayer, {
@@ -300,6 +306,7 @@ SOCCER.addScore = function (team, playerLastHit) {
             key: 'goal'
         }
     };
+    playerLastHit.body.scoreThreshold = 120;
     COUCHFRIENDS.send(jsonData);
 
     SOCCER.score[team]++;
