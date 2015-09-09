@@ -637,8 +637,8 @@ SOCCER.addPlayer = function (id) {
         Matter.Body.translate(
             body,
             {
-                x: (SOCCER.players[playerId].speedX * 15),
-                y: (SOCCER.players[playerId].speedY * 15)
+                x: (SOCCER.players[playerId].speedX * 12),
+                y: (SOCCER.players[playerId].speedY * 12)
             }
         );
 
@@ -649,8 +649,8 @@ SOCCER.addPlayer = function (id) {
                 y: 0
             },
             {
-                x: (SOCCER.players[playerId].speedX * .001),
-                y: (SOCCER.players[playerId].speedY * .001)
+                x: (SOCCER.players[playerId].speedX * .0005),
+                y: (SOCCER.players[playerId].speedY * .0005)
             }
         );
     };
