@@ -637,8 +637,8 @@ SOCCER.addPlayer = function (id) {
         Matter.Body.translate(
             body,
             {
-                x: (SOCCER.players[playerId].speedX * 20),
-                y: (SOCCER.players[playerId].speedY * 20)
+                x: (SOCCER.players[playerId].speedX * 15),
+                y: (SOCCER.players[playerId].speedY * 15)
             }
         );
 
@@ -680,12 +680,10 @@ SOCCER.addPlayer = function (id) {
                     type: 'circle',
                     label: 'Shoot!',
                     color: '#ff0000',
-                    size: {
-                        radius: 160
-                    },
+                    size: 64,
                     position: {
-                        left: '50%',
-                        top: '50%'
+                        right: 64,
+                        bottom: 64
                     }
                 }
             };
