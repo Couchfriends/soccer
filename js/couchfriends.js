@@ -4,8 +4,6 @@
  * Copyright (c) 2015 Couchfriends
  */
 COUCHFRIENDS.settings.apiKey = 'soccer-1234';
-COUCHFRIENDS.settings.host = 'ws.couchfriends.com';
-COUCHFRIENDS.settings.port = '80';
 
 /**
  * Host a new game
@@ -70,6 +68,10 @@ COUCHFRIENDS.on('playerClickUp', function(data) {
     SOCCER.shoot(data.id);
 });
 COUCHFRIENDS.on('buttonClick', function(data) {
+    SOCCER.shoot(data.playerId);
+});
+COUCHFRIENDS.on('buttonUp', function(data) {
+    console.log(data);
     SOCCER.shoot(data.playerId);
 });
 
