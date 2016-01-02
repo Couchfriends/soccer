@@ -71,7 +71,6 @@ COUCHFRIENDS.on('buttonClick', function(data) {
     SOCCER.shoot(data.playerId);
 });
 COUCHFRIENDS.on('buttonUp', function(data) {
-    console.log(data);
     SOCCER.shoot(data.playerId);
 });
 
