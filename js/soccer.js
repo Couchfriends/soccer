@@ -301,6 +301,7 @@ SOCCER.addScore = function (team, playerLastHit) {
     var jsonData = {
         topic: 'game',
         action: 'achievementUnlock',
+        type: 'game.achievementUnlock',
         data: {
             playerId: playerLastHit.id,
             key: 'goal'

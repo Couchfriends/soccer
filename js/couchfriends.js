@@ -9,18 +9,10 @@ COUCHFRIENDS.settings.apiKey = 'soccer-1234';
  * Host a new game
  */
 function hostGame() {
-    var jsonData = {
-        topic: 'game',
-        action: 'host',
-        data: {
-            sessionKey: 'soccer-1234'
-        }
-    };
-    COUCHFRIENDS.send(jsonData);
 }
 
 function init() {
-    COUCHFRIENDS.connect();
+    //COUCHFRIENDS.connect();
 }
 
 function identifyPlayer(playerId, color) {
@@ -28,8 +20,10 @@ function identifyPlayer(playerId, color) {
         return;
     }
     var jsonData = {
+        id: playerId,
         topic: 'player',
         action: 'identify',
+        type: 'player.identify',
         data: {
             id: playerId,
             color: color
@@ -39,7 +33,7 @@ function identifyPlayer(playerId, color) {
 }
 
 COUCHFRIENDS.on('connect', function() {
-    hostGame();
+    SOCCER.newGame();
 });
 
 COUCHFRIENDS.on('disconnect', function() {
@@ -51,27 +45,27 @@ COUCHFRIENDS.on('disconnect', function() {
  * @param {object} data List with game data
  * @param {string} data.code The game code players need to fill to join this game
  */
-COUCHFRIENDS.on('gameStart', function(data) {
-    SOCCER.newGame();
+COUCHFRIENDS.on('game.start', function(data) {
+    // SOCCER.newGame();
 });
 
-COUCHFRIENDS.on('playerLeft', function(data) {
+COUCHFRIENDS.on('player.left', function(data) {
     SOCCER.removePlayer(data.id);
 });
-COUCHFRIENDS.on('playerJoined', function(data) {
+COUCHFRIENDS.on('player.join', function(data) {
     SOCCER.addPlayer(data.id);
 });
-COUCHFRIENDS.on('playerOrientation', function(data) {
-    SOCCER.movePlayer(data.id, data);
+COUCHFRIENDS.on('player.orientation', function(data) {
+    SOCCER.movePlayer(data.player.id, data);
 });
-COUCHFRIENDS.on('playerClickUp', function(data) {
-    SOCCER.shoot(data.id);
+COUCHFRIENDS.on('player.clickUp', function(data) {
+    SOCCER.shoot(data.player.id);
 });
-COUCHFRIENDS.on('buttonClick', function(data) {
-    SOCCER.shoot(data.playerId);
+COUCHFRIENDS.on('player.buttonClick', function(data) {
+    SOCCER.shoot(data.player.id);
 });
-COUCHFRIENDS.on('buttonUp', function(data) {
-    SOCCER.shoot(data.playerId);
+COUCHFRIENDS.on('player.buttonUp', function(data) {
+    SOCCER.shoot(data.player.id);
 });
 
 window.onload = init;
